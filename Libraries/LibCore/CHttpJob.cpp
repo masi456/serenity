@@ -4,7 +4,36 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include <CGzip.h>
+
 #define CHTTPJOB_DEBUG
+
+static ByteBuffer handle_content_encoding(const ByteBuffer& buffer, const String& content_encoding)
+{
+    dbg() << "CHttpJob::handle_content_encoding: buffer has content_encoding = " << content_encoding;
+
+    if (content_encoding == "gzip") {
+        if (!CGzip::is_compressed(buffer)) {
+            dbg() << "CHttpJob::handle_content_encoding: buffer is not gzip compressed!";
+        }
+
+        dbg() << "CHttpJob::handle_content_encoding: buffer is gzip compressed!";
+
+        auto uncompressed = CGzip::decompress(buffer);
+        if (!uncompressed.has_value()) {
+            dbg() << "CHttpJob::handle_content_encoding: Gzip::decompress() failed. Returning original buffer.";
+            return buffer;
+        }
+
+        dbg() << "CHttpJob::handle_content_encoding: Gzip::decompress() successful.\n"
+              << "  Input size = " << buffer.size() << "\n"
+              << "  Output size = " << uncompressed.value().size();
+
+        return uncompressed.value();
+    }
+
+    return buffer;
+}
 
 CHttpJob::CHttpJob(const CHttpRequest& request)
     : m_request(request)
@@ -113,6 +142,11 @@ void CHttpJob::finish_up()
     }
     m_received_buffers.clear();
 
+    auto content_encoding = m_headers.get("Content-Encoding");
+    if (content_encoding.has_value()) {
+        flattened_buffer = handle_content_encoding(flattened_buffer, content_encoding.value());
+    }
+
     auto response = CHttpResponse::create(m_code, move(m_headers), move(flattened_buffer));
     deferred_invoke([this, response](auto&) {
         did_finish(move(response));
@@ -146,4 +180,3 @@ void CHttpJob::shutdown()
     remove_child(*m_socket);
     m_socket = nullptr;
 }
-
