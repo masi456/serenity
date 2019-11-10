@@ -301,4 +301,22 @@ float ceilf(float value)
     }
     return as_int + 1;
 }
+
+double floor(double value)
+{
+    auto as_int = (int) value;
+    if ((double) as_int < value) {
+        return (double) as_int;
+    }
+    return (double) (as_int - 1);
+}
+
+double ceil(double value)
+{
+    auto as_int = (int) value;
+    if ((double) as_int < value) {
+        return (double) as_int + 1;
+    }
+    return (double) as_int;
+}
 }
