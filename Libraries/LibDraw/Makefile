@@ -11,7 +11,8 @@ OBJS = \
     ImageDecoder.o \
     Rect.o \
     StylePainter.o \
-    Emoji.o
+    Emoji.o \
+    TrueType.o
 
 LIBRARY = libdraw.a
 DEFINES += -DUSERLAND
